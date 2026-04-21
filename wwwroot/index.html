@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browsing Insights Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom animations and styles */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .activity-item:hover {
+            transform: translateX(4px);
+            transition: transform 0.2s ease;
+        }
+        
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-semibold text-gray-900">Browsing Insights</h1>
+                    <p class="text-sm text-gray-500 mt-1">Your personal browsing activity tracker</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="last-updated" class="text-xs text-gray-400"></span>
+                    <button onclick="refreshData()" class="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Pages Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">Pages Visited Today</h3>
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <p id="total-pages" class="text-3xl font-bold text-gray-900">-</p>
+                <p class="text-xs text-gray-400 mt-2">Since midnight</p>
+            </div>
+
+            <!-- Top Domain Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in" style="animation-delay: 0.1s;">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">Most Visited Domain</h3>
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                    </svg>
+                </div>
+                <p id="top-domain" class="text-2xl font-bold text-gray-900 truncate">-</p>
+                <p id="top-domain-count" class="text-xs text-gray-400 mt-2">0 visits</p>
+            </div>
+
+            <!-- Active Hours Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in" style="animation-delay: 0.2s;">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">Peak Activity Hour</h3>
+                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p id="peak-hour" class="text-3xl font-bold text-gray-900">-</p>
+                <p class="text-xs text-gray-400 mt-2">Most active time</p>
+            </div>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Column: Activity Feed (2/3 width) -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 fade-in" style="animation-delay: 0.3s;">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                        <p class="text-sm text-gray-500 mt-1">Your latest browsing events</p>
+                    </div>
+                    <div id="activity-feed" class="p-6">
+                        <!-- Activity items will be inserted here -->
+                        <div class="space-y-4">
+                            <div class="skeleton h-20 rounded-lg"></div>
+                            <div class="skeleton h-20 rounded-lg"></div>
+                            <div class="skeleton h-20 rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time-Based View -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 fade-in" style="animation-delay: 0.4s;">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Activity Timeline</h2>
+                        <p class="text-sm text-gray-500 mt-1">Pages visited by time period</p>
+                    </div>
+                    <div id="timeline-view" class="p-6">
+                        <!-- Timeline will be inserted here -->
+                        <div class="space-y-4">
+                            <div class="skeleton h-12 rounded-lg"></div>
+                            <div class="skeleton h-12 rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Topics (1/3 width) -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8 fade-in" style="animation-delay: 0.5s;">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Top Interests</h2>
+                        <p class="text-sm text-gray-500 mt-1">Your browsing topics</p>
+                    </div>
+                    <div id="topics-container" class="p-6">
+                        <!-- Topics will be inserted here -->
+                        <div class="space-y-2">
+                            <div class="skeleton h-8 rounded-full"></div>
+                            <div class="skeleton h-8 rounded-full w-4/5"></div>
+                            <div class="skeleton h-8 rounded-full w-3/5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:5013/api'; // Update with your API URL
+
+        // Utility Functions
+        function extractDomain(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.hostname.replace('www.', '');
+            } catch {
+                return 'unknown';
+            }
+        }
+
+        function formatTimeAgo(timestamp) {
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            return `${diffDays}d ago`;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function isToday(timestamp) {
+            const date = new Date(timestamp);
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        function isYesterday(timestamp) {
+            const date = new Date(timestamp);
+            const yesterday = new Date(Date.now() - 86400000);
+            return date.toDateString() === yesterday.toDateString();
+        }
+
+        // API Functions
+        async function fetchEvents() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/events`);
+                if (!response.ok) throw new Error('Failed to fetch events');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch events:', error);
+                return [];
+            }
+        }
+
+        async function fetchTopics() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/insights/top-topics`);
+                if (!response.ok) throw new Error('Failed to fetch topics');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch topics:', error);
+                return [];
+            }
+        }
+
+        async function fetchSummary() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/insights/summary`);
+                if (!response.ok) throw new Error('Failed to fetch summary');
+                return await response.json();
+            } catch (error) {
+                console.warn('Failed to fetch summary, computing from events');
+                return null;
+            }
+        }
+
+        // Compute Summary from Events
+        function computeSummary(events) {
+            const todayEvents = events.filter(e => isToday(e.timestamp));
+            
+            // Total pages today
+            const totalToday = todayEvents.length;
+            
+            // Top domain
+            const domainCounts = {};
+            todayEvents.forEach(e => {
+                const domain = extractDomain(e.url);
+                domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+            });
+            
+            const topDomainEntry = Object.entries(domainCounts)
+                .sort((a, b) => b[1] - a[1])[0];
+            
+            const topDomain = topDomainEntry ? topDomainEntry[0] : 'N/A';
+            const topDomainCount = topDomainEntry ? topDomainEntry[1] : 0;
+            
+            // Peak hour
+            const hourCounts = {};
+            todayEvents.forEach(e => {
+                const hour = new Date(e.timestamp).getHours();
+                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            });
+            
+            const peakHourEntry = Object.entries(hourCounts)
+                .sort((a, b) => b[1] - a[1])[0];
+            
+            const peakHour = peakHourEntry 
+                ? new Date(0, 0, 0, parseInt(peakHourEntry[0])).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    hour12: true 
+                  })
+                : 'N/A';
+            
+            return { totalToday, topDomain, topDomainCount, peakHour };
+        }
+
+        // Extract Topics from Events
+        function extractTopics(events) {
+            const keywords = {};
+            
+            events.forEach(e => {
+                // Extract words from title
+                const words = (e.title || '')
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(w => w.length > 4); // Only words longer than 4 chars
+                
+                words.forEach(word => {
+                    // Remove punctuation
+                    word = word.replace(/[^\w]/g, '');
+                    if (word.length > 4) {
+                        keywords[word] = (keywords[word] || 0) + 1;
+                    }
+                });
+            });
+            
+            // Convert to array and sort
+            return Object.entries(keywords)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([topic, count]) => ({ topic, count }));
+        }
+
+        // Render Functions
+        function renderSummary(summary) {
+            document.getElementById('total-pages').textContent = summary.totalToday;
+            document.getElementById('top-domain').textContent = summary.topDomain;
+            document.getElementById('top-domain-count').textContent = `${summary.topDomainCount} visits`;
+            document.getElementById('peak-hour').textContent = summary.peakHour;
+        }
+
+        function renderTopics(topics) {
+            const container = document.getElementById('topics-container');
+            
+            if (topics.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-sm">No topics yet</p>';
+                return;
+            }
+            
+            const maxCount = Math.max(...topics.map(t => t.count));
+            
+            container.innerHTML = `
+                <div class="space-y-3">
+                    ${topics.map(t => `
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                ${t.topic}
+                            </span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full" style="width: ${(t.count / maxCount) * 100}%"></div>
+                                </div>
+                                <span class="text-xs text-gray-500 font-medium w-6 text-right">${t.count}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderActivityFeed(events) {
+            const container = document.getElementById('activity-feed');
+            
+            if (events.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-sm">No activity yet</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="space-y-4">
+                    ${events.slice(0, 10).map(e => `
+                        <div class="activity-item flex items-start space-x-4 p-4 rounded-lg hover:bg-gray-50 transition">
+                            <div class="flex-shrink-0 mt-1">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium text-gray-900 truncate">
+                                    ${e.title || 'Untitled'}
+                                </h3>
+                                <a href="${e.url}" target="_blank" class="text-xs text-blue-600 hover:text-blue-700 truncate block mt-1">
+                                    ${e.url}
+                                </a>
+                                <div class="flex items-center mt-2 space-x-3">
+                                    <span class="text-xs text-gray-500">${formatTimeAgo(e.timestamp)}</span>
+                                    <span class="text-xs text-gray-400">•</span>
+                                    <span class="text-xs text-gray-500">${extractDomain(e.url)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderTimeline(events) {
+            const container = document.getElementById('timeline-view');
+            
+            const todayEvents = events.filter(e => isToday(e.timestamp));
+            const yesterdayEvents = events.filter(e => isYesterday(e.timestamp));
+            
+            const sections = [];
+            
+            if (todayEvents.length > 0) {
+                sections.push({
+                    label: 'Today',
+                    count: todayEvents.length,
+                    color: 'blue'
+                });
+            }
+            
+            if (yesterdayEvents.length > 0) {
+                sections.push({
+                    label: 'Yesterday',
+                    count: yesterdayEvents.length,
+                    color: 'gray'
+                });
+            }
+            
+            if (sections.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-sm">No activity to display</p>';
+                return;
+            }
+            
+            const maxCount = Math.max(...sections.map(s => s.count));
+            
+            container.innerHTML = `
+                <div class="space-y-4">
+                    ${sections.map(s => `
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-gray-700">${s.label}</span>
+                                <span class="text-sm font-semibold text-gray-900">${s.count} pages</span>
+                            </div>
+                            <div class="w-full h-8 bg-gray-100 rounded-lg overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-${s.color}-400 to-${s.color}-500 rounded-lg flex items-center px-3" style="width: ${(s.count / maxCount) * 100}%">
+                                    <span class="text-xs font-medium text-white">${s.count}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Main Load Function
+        async function loadDashboard() {
+            try {
+                // Fetch all data
+                const [events, topics, summary] = await Promise.all([
+                    fetchEvents(),
+                    fetchTopics(),
+                    fetchSummary()
+                ]);
+                
+                // Compute summary if not provided
+                const finalSummary = summary || computeSummary(events);
+                
+                // Extract topics if not provided
+                const finalTopics = topics.length > 0 ? topics : extractTopics(events);
+                
+                // Render all sections
+                renderSummary(finalSummary);
+                renderTopics(finalTopics);
+                renderActivityFeed(events);
+                renderTimeline(events);
+                
+                // Update last updated time
+                document.getElementById('last-updated').textContent = 
+                    `Updated ${new Date().toLocaleTimeString()}`;
+                    
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Refresh function
+        function refreshData() {
+            loadDashboard();
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
+
+</body>
+</html>

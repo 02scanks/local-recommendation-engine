@@ -3,14 +3,36 @@ const DEBOUNCE_MS = 10000; // 10 seconds
 const DEBOUNCE_KEY = 'recent_urls';
 
 // Filtered out URL patterns
-const EXCLUDED_PATTERNS = ['chrome://', 'about:blank', 'chrome-extension://'];
+const EXCLUDED_PATTERNS = [
+  'chrome://',
+  'about:',
+  'chrome-extension://',
+  'edge://',
+  'file://',
+  'moz-extension://',
+  'safari-extension://',
+  'view-source:',
+  'data:',
+  'blob:'
+];
 
 /**
  * Check if URL should be tracked
  */
 function isTrackableUrl(url) {
   if (!url) return false;
-  return !EXCLUDED_PATTERNS.some(pattern => url.startsWith(pattern));
+  
+  // Exclude non-web URLs
+  if (EXCLUDED_PATTERNS.some(pattern => url.startsWith(pattern))) {
+    return false;
+  }
+  
+  // Only track http and https URLs
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return false;
+  }
+  
+  return true;
 }
 
 /**
