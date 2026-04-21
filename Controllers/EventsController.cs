@@ -1,6 +1,7 @@
 using LocalRecomendationEngine.Data;
 using LocalRecomendationEngine.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocalRecomendationEngine.Controllers
 {
@@ -31,5 +32,19 @@ namespace LocalRecomendationEngine.Controllers
 
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> GetBrowsingEvents()
+        {
+            _logger.LogInformation("Retrieving browsing events.");
+            var events = await _context.BrowsingEvents
+                .OrderByDescending(e => e.Timestamp)
+                .Take(50)
+                .ToListAsync();
+
+            _logger.LogInformation("Browsing events retrieved successfully.");
+            return Ok(events);
+
+        }
     }
 }
